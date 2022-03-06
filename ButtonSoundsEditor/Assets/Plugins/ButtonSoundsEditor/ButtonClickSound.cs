@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace Assets.Plugins.ButtonSoundsEditor
@@ -15,7 +15,8 @@ namespace Assets.Plugins.ButtonSoundsEditor
 
         private void PlayClickSound()
         {
-            AudioSource.PlayOneShot(ClickSound);
+            if (ClickSound != null)
+                AudioSource.PlayOneShot(ClickSound);
         }
     }
 
