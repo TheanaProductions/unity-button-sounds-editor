@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -23,6 +23,8 @@ namespace Assets.Plugins.ButtonSoundsEditor.Editor
 		private AudioSource _audioSource;
 		private AudioClip _clickSound;
 		private Vector2 _scrollPosition;
+
+		private ButtonClickSoundRunTime runTimeManager;
 
 		private List<GameObject> All { get { return _candidates[CandidatesTypeFilter.All]; } }
 
@@ -75,23 +77,47 @@ namespace Assets.Plugins.ButtonSoundsEditor.Editor
 
 		private void RefreshCandidates()
 		{
+			if (FindObjectOfType<ButtonClickSoundRunTime>())
+            {
+				runTimeManager = FindObjectOfType<ButtonClickSoundRunTime>();
+				runTimeManager.RefreshList();
+			}
+			else if (FindObjectsOfType<ButtonClickSoundRunTime>().Length > 1)
+				Debug.LogWarning("Too many ButtonClickSoundRunTime managers are presents in the scene. Only one should exist.");
+
 			_candidates.Values.ToList().ForEach(_ => _.Clear());
 
-			var buttons = Resources.FindObjectsOfTypeAll<Button>().Where(_ => PrefabUtility.GetPrefabType(_) != PrefabType.Prefab).Select(_ => _.gameObject).ToList();
-			_candidates[CandidatesTypeFilter.Buttons].AddRange(buttons);
-			_candidates[CandidatesTypeFilter.All].AddRange(buttons);
+            // Only take the buttons outside of prefabs
+            //var buttons = Resources.FindObjectsOfTypeAll<Button>().Where(_ => PrefabUtility.GetPrefabAssetType(_) != PrefabAssetType.Regular).Select(_ => _.gameObject).ToList();
+            //_candidates[CandidatesTypeFilter.Buttons].AddRange(buttons);
+            //_candidates[CandidatesTypeFilter.All].AddRange(buttons);
 
-			var eventTriggers = Resources.FindObjectsOfTypeAll<EventTrigger>().Where(_ => PrefabUtility.GetPrefabType(_) != PrefabType.Prefab &&
-							_.triggers.Any(e => e.eventID == EventTriggerType.PointerClick)).Select(_ => _.gameObject).ToList();
-			_candidates[CandidatesTypeFilter.EventTriggers].AddRange(eventTriggers);
-			_candidates[CandidatesTypeFilter.All].AddRange(eventTriggers);
+            //var eventTriggers = Resources.FindObjectsOfTypeAll<EventTrigger>().Where(_ => PrefabUtility.GetPrefabAssetType(_) != PrefabAssetType.Regular &&
+            //                _.triggers.Any(e => e.eventID == EventTriggerType.PointerClick)).Select(_ => _.gameObject).ToList();
+            //_candidates[CandidatesTypeFilter.EventTriggers].AddRange(eventTriggers);
+            //_candidates[CandidatesTypeFilter.All].AddRange(eventTriggers);
 
-			var toggles = Resources.FindObjectsOfTypeAll<Toggle>().Where(_ => PrefabUtility.GetPrefabType(_) != PrefabType.Prefab).Select(_ => _.gameObject).ToList();
-			_candidates[CandidatesTypeFilter.Toggles].AddRange(toggles);
-			_candidates[CandidatesTypeFilter.All].AddRange(toggles);
+            //var toggles = Resources.FindObjectsOfTypeAll<Toggle>().Where(_ => PrefabUtility.GetPrefabAssetType(_) != PrefabAssetType.Regular).Select(_ => _.gameObject).ToList();
+            //_candidates[CandidatesTypeFilter.Toggles].AddRange(toggles);
+            //_candidates[CandidatesTypeFilter.All].AddRange(toggles);
 
-			_candidates.Values.ToList().ForEach(_ => _.Sort(this));
-		}
+            //_candidates.Values.ToList().ForEach(_ => _.Sort(this));
+
+            // Allow to take all the buttons (even those in prefabs)
+            var buttons = FindObjectsOfType<Button>().Select(_ => _.gameObject).ToList();
+            _candidates[CandidatesTypeFilter.Buttons].AddRange(buttons);
+            _candidates[CandidatesTypeFilter.All].AddRange(buttons);
+
+            var eventTriggers = FindObjectsOfType<EventTrigger>().Where(_ => _.triggers.Any(e => e.eventID == EventTriggerType.PointerClick)).Select(_ => _.gameObject).ToList();
+            _candidates[CandidatesTypeFilter.EventTriggers].AddRange(eventTriggers);
+            _candidates[CandidatesTypeFilter.All].AddRange(eventTriggers);
+
+            var toggles = FindObjectsOfType<Toggle>().Select(_ => _.gameObject).ToList();
+            _candidates[CandidatesTypeFilter.Toggles].AddRange(toggles);
+            _candidates[CandidatesTypeFilter.All].AddRange(toggles);
+
+            _candidates.Values.ToList().ForEach(_ => _.Sort(this));
+        }
 
 		private string GetTransformPath(Transform tr)
 		{
@@ -350,7 +376,13 @@ namespace Assets.Plugins.ButtonSoundsEditor.Editor
 
 		private void AddButtonClickSound(GameObject candidate)
 		{
-			ButtonClickSound buttonClickSound = candidate.AddComponent<ButtonClickSound>();
+			ButtonClickSound buttonClickSound;
+
+			if (!candidate.GetComponent<ButtonClickSound>())
+				buttonClickSound = candidate.AddComponent<ButtonClickSound>();
+			else
+				buttonClickSound = candidate.GetComponent<ButtonClickSound>();
+
 			AssignClickSound(buttonClickSound);
 			EditorUtility.SetDirty(candidate);
 		}
